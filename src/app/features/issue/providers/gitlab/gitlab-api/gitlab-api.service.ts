@@ -25,7 +25,7 @@ export class GitlabApiService {
 
   getCurrentUser$(cfg: GitlabCfg): Observable<GitlabUser> {
     return this._sendRequest$({
-      url: `${this.apiLink(cfg)}user`
+      url: `${this._apiBaseLink$(cfg)}user`
     }, cfg)
       .pipe(
       );
@@ -218,23 +218,26 @@ export class GitlabApiService {
     return throwError({[HANDLED_ERROR_PROP_STR]: 'Gitlab: Api request failed.'});
   }
 
-  private apiLink(projectConfig: GitlabCfg): string {
+  private _apiBaseLink$(projectConfig: GitlabCfg): string {
     let apiURL: string = '';
-    let projectURL: string = projectConfig.project ? projectConfig.project : '';
     if (projectConfig.gitlabBaseUrl != null) {
       const fixedUrl = projectConfig.gitlabBaseUrl.match(/.*\/$/) ? projectConfig.gitlabBaseUrl : `${projectConfig.gitlabBaseUrl}/`;
-      apiURL = fixedUrl + 'api/v4/projects/';
+      apiURL = fixedUrl + 'api/v4/';
     } else {
       apiURL = GITLAB_API_BASE_URL + '/';
     }
-    const projectPath = projectURL.match(GITLAB_PROJECT_REGEX);
-    if (projectPath) {
+    return apiURL;
+  }
+
+  private apiLink(projectConfig: GitlabCfg): string {
+    const apiURL: string = this._apiBaseLink$(projectConfig);
+    let projectURL: string = projectConfig.project ? projectConfig.project : '';
+    if (projectURL.match(GITLAB_PROJECT_REGEX)) {
       projectURL = projectURL.replace(/\//ig, '%2F');
     } else {
       // Should never enter here
       throwError('Gitlab Project URL');
     }
-    apiURL += projectURL;
-    return apiURL;
+    return `${apiURL}projects/${projectURL}`;
   }
 }
